@@ -1,5 +1,9 @@
 <script setup>
 import MagnifyingGlass from "@/Components/Icons/MagnifyingGlass.vue";
+import Pagination from "@/Components/Pagination.vue";
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { usePage, Link, Head, useForm, router } from "@inertiajs/vue3"
+import { computed, ref, watch} from "vue";
 
 defineProps({
     students: {
@@ -7,9 +11,48 @@ defineProps({
         required: true,
     },
 });
+
+let search = ref(usePage().props.search), pageNumber = ref(1);
+let studentsURL = computed(() =>{
+    let url = new URL (route("students.index"));
+    url.searchParams.append("page", pageNumber.value);
+
+    if(search.value){
+        url.searchParams.append("search", search.value);
+    }
+
+    return url;
+});
+
+watch(() => studentsURL.value,
+(updatedStudentsURL) =>{
+    router.visit(updatedStudentsURL, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+});
+
+const deleteForm = useForm({});
+
+const deleteStudent = (studentId) =>{
+    if (confirm("Are you sure you want to delete this student?")) {
+        deleteForm.delete(route('students.destroy', studentId));
+    }
+}
 </script>
 
 <template>
+    <Head title="Students List" />
+
+    <AuthenticatedLayout>
+        <template #header>
+            <h2
+                class="text-xl font-semibold leading-tight text-gray-800"
+            >
+                Students List
+            </h2>
+        </template>
     <div class="bg-gray-100 py-10">
         <div class="mx-auto max-w-7xl">
             <div class="px-4 sm:px-6 lg:px-8">
@@ -24,12 +67,12 @@ defineProps({
                     </div>
 
                     <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-                        <a
-                            href="#"
+                        <Link
+                            :href="route('students.create')"
                             class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
                         >
                             Add Student
-                        </a>
+                        </Link>
                     </div>
                 </div>
 
@@ -42,6 +85,7 @@ defineProps({
                         </div>
 
                         <input
+                            v-model="search"
                             type="text"
                             autocomplete="off"
                             placeholder="Search students data..."
@@ -144,13 +188,14 @@ defineProps({
                                             <td
                                                 class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
                                             >
-                                                <a
-                                                    href="#"
+                                                <Link
+                                                    :href="route('students.edit', student.id)"
                                                     class="text-indigo-600 hover:text-indigo-900"
                                                 >
                                                     Edit
-                                                </a>
+                                        </Link>
                                                 <button
+                                                @click="deleteStudent(student.id)"
                                                     class="ml-2 text-indigo-600 hover:text-indigo-900"
                                                 >
                                                     Delete
@@ -160,11 +205,12 @@ defineProps({
                                     </tbody>
                                 </table>
                             </div>
-                            <div>Pagination Links</div>
+                            <Pagination :data="students"/>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    </AuthenticatedLayout>
 </template>
